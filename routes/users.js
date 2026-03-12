@@ -3,36 +3,20 @@ const router = Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const upload = require("../middleware/multer");
+const cloudinary = require("../config/cloudinary");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    const uniqueName =
-      Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueName + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ storage: storage });
-
-// get
+// get all users
 router.get("/", async (req, res) => {
   try {
     const users = await User.find();
-
     res.status(200).json(users);
   } catch (error) {
     res.status(400).json(error.message);
   }
 });
-// get
 
-//post
+// create user
 router.post("/", async (req, res) => {
   const { name } = req.body;
 
@@ -44,45 +28,35 @@ router.post("/", async (req, res) => {
 
   res.send("User is created: OK");
 });
-//post
 
 // registration
 router.post("/register", upload.single("image"), async (req, res) => {
   try {
     const emailExists = await User.findOne({ email: req.body.email });
-    const imagePath = req?.file || req?.file?.path;
-
-    if (!imagePath) {
-      return res.status(400).json({ message: "Image is required" });
-    }
 
     if (emailExists) {
       return res.status(400).send("User with this email already exists!");
     }
 
+    if (!req.file) {
+      return res.status(400).json({ message: "Image is required" });
+    }
 
-    bcrypt.hash(req.body.password, 10, async (err, hashedPwd) => {
-      if (err) {
-        return res.json({
-          error: err,
-        });
-      }
+    const hashedPwd = await bcrypt.hash(req.body.password, 10);
 
-      const user = new User({
-        ...req.body,
-        password: hashedPwd,
-        image: req.file ? req.file.path : null,
-      });
-
-      await user.save();
-
-      return res.status(201).json(user);
+    const user = new User({
+      ...req.body,
+      password: hashedPwd,
+      image: req.file.path,
     });
+
+    await user.save();
+
+    res.status(201).json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-// registration
 
 // login
 router.post("/login", async (req, res) => {
@@ -92,13 +66,17 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-      return res.status(400).json({ message: "Email or Password are incorrect" });
+      return res.status(400).json({
+        message: "Email or Password are incorrect",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(400).json({ message: "Email or Password are incorrect" });
+      return res.status(400).json({
+        message: "Email or Password are incorrect",
+      });
     }
 
     const token = jwt.sign(
@@ -113,24 +91,33 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-// login
 
-//delete
+// delete user
 router.delete("/:_id", async (req, res) => {
   try {
-    await User.findByIdAndDelete({ _id: req.params._id });
+    const user = await User.findById(req.params._id);
 
-    res.send(`${req.params._id} User delete bo'ldi: OK`);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    if (user.image) {
+      const publicId = user.image.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(`binomo_users/${publicId}`);
+    }
+
+    await User.findByIdAndDelete(req.params._id);
+
+    res.send(`${req.params._id} User deleted: OK`);
   } catch (error) {
-    console.log({
-      error,
-      message: "User o'chmadi, nimadur noto'g'ri ketgan!",
+    console.log(error);
+    res.status(500).json({
+      message: "User deletion failed",
     });
   }
 });
-//delete
 
-//get by id
+// get by id
 router.get("/:_id", async (req, res) => {
   try {
     const user = await User.findById(req.params._id);
@@ -139,14 +126,14 @@ router.get("/:_id", async (req, res) => {
     res.status(400).json(error.message);
   }
 });
-//get by id
 
-//patch
+// update user
 router.patch("/:_id", upload.single("image"), async (req, res) => {
   try {
     const _id = req.params._id;
+
     const existingUser = await User.findById(_id);
-    
+
     if (!existingUser) {
       return res.status(404).send("User topilmadi");
     }
@@ -156,8 +143,9 @@ router.patch("/:_id", upload.single("image"), async (req, res) => {
     };
 
     if (req.file) {
-      if (existingUser.image && fs.existsSync(existingUser.image)) {
-        fs.unlinkSync(existingUser.image);
+      if (existingUser.image) {
+        const publicId = existingUser.image.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`binomo_users/${publicId}`);
       }
 
       updatedData.image = req.file.path;
@@ -172,13 +160,11 @@ router.patch("/:_id", upload.single("image"), async (req, res) => {
     res.status(200).json(updatedUser);
 
   } catch (error) {
-    console.log({
-      error,
-      message: "Patch ishlamadi, Error!",
+    console.log(error);
+    res.status(500).json({
+      message: "Patch ishlamadi",
     });
-    res.status(500).json({ error: error.message });
   }
 });
-// patch
 
 module.exports = router;
