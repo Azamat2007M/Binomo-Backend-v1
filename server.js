@@ -1,6 +1,6 @@
 const express = require('express');
 require('dotenv').config();
-const mongoose = require('mongoose');
+const sequelize = require('./config/db'); 
 const cors = require('cors');
 const usersRouter = require('./routes/users');
 const binomersRouter = require('./routes/binomers');
@@ -11,16 +11,18 @@ app.use(cors());
 app.use(express.json());
 app.use('/users', usersRouter);
 app.use('/uploads', express.static('uploads'));
-app.use('/binomers', binomersRouter)
-app.use('/coins', coinsRouter)
-mongoose.set('strictQuery', true);
+app.use('/binomers', binomersRouter);
+app.use('/coins', coinsRouter);
 
 const PORT = process.env.PORT || 8000;
 
 const startServer = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URL);
-    console.log('MongoDB connected');
+    await sequelize.authenticate();
+    console.log('PostgreSQL connected successfully.');
+
+    await sequelize.sync({ alter: true });
+    console.log('Database tables synced.');
 
     app.listen(PORT, () => {
       console.log(`Server running: http://localhost:${PORT}`);

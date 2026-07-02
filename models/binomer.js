@@ -1,19 +1,17 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
 
-const binomerSchema = new mongoose.Schema(
-    {
-        user_id: {
-            type: String,
-            required: true,
-        },
-        author_id: {
-            type: String,
-            required: true,
-        },
-    },
-    { 
-        id: false,
-    }
-)
+const Binomer = sequelize.define('Binomer', {
+  user_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  author_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  }
+}, {
+  timestamps: false 
+});
 
-module.exports = mongoose.model("Binomer", binomerSchema)
+module.exports = Binomer;

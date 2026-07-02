@@ -1,23 +1,21 @@
-const mongoose = require('mongoose')
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
 
-const coinSchema = new mongoose.Schema(
-    {
-        symbol: {
-            type: String,
-            required: true,
-        },
-        name: {
-            type: String,
-            required: true,
-        },
-        image: {
-            type: String,
-            required: true,
-        },
-    },
-    { 
-        id: false,
-    }
-)
+const Coin = sequelize.define('Coin', {
+  symbol: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  image: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  }
+}, {
+  timestamps: false
+});
 
-module.exports = mongoose.model("Coin", coinSchema)
+module.exports = Coin;
