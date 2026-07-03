@@ -37,6 +37,11 @@ const User = sequelize.define('User', {
     type: DataTypes.DECIMAL(15, 4), 
     allowNull: false,
     defaultValue: 10000.0000,
+
+    get() {
+      const value = this.getDataValue('wallet');
+      return value === null ? null : parseFloat(value);
+    }
   },
   useractived: {
     type: DataTypes.BOOLEAN,
