@@ -32,17 +32,22 @@ router.post("/", async (req, res) => {
 
 router.post("/register", upload.single("image"), async (req, res) => {
   try {
-    const emailExists = await User.findOne({ where: { email: req.body.email } });
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).send("Email and Password are required!");
+    }
+
+    const emailExists = await User.findOne({ where: { email } });
     if (emailExists) {
       return res.status(400).send("User with this email already exists!");
     }
 
     if (!req.file) {
-      return res.status(400).json({ message: "Image is required" });
+      return res.status(400).send("Image is required!");
     }
 
-    const hashedPwd = await bcrypt.hash(req.body.password, 10);
+    const hashedPwd = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       ...req.body,
@@ -52,7 +57,8 @@ router.post("/register", upload.single("image"), async (req, res) => {
 
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Registration error:", error);
+    res.status(500).send(error.message || "Internal Server Error");
   }
 });
 
@@ -136,7 +142,6 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
     let updatedData = {
       ...req.body,
     };
-    console.log("Updated Data:", updatedData);
     if (req.file) {
       if (existingUser.image && typeof existingUser.image === 'string') {
         const parts = existingUser.image.split("/");
