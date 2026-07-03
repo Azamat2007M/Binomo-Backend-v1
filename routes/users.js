@@ -30,7 +30,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.post("/register", upload.single("image"), async (req, res) => {
+router.post("/register", (req, res, next) => {
+  upload.single("image")(req, res, function (err) {
+    if (err) {
+      console.error("Multer/Cloudinary error:", err);
+      return res.status(400).send(`File upload error: ${err.message || err}`);
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -57,7 +65,7 @@ router.post("/register", upload.single("image"), async (req, res) => {
 
     res.status(201).json(user);
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Registration database error:", error);
     res.status(500).send(error.message || "Internal Server Error");
   }
 });
