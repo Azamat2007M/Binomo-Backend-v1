@@ -138,9 +138,12 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
     };
 
     if (req.file) {
-      if (existingUser.image) {
-        const publicId = existingUser.image.split("/").pop().split(".")[0];
-        await cloudinary.uploader.destroy(`binomo_users/${publicId}`);
+      if (existingUser.image && typeof existingUser.image === 'string') {
+        const parts = existingUser.image.split("/");
+        if (parts.length > 0) {
+          const publicId = parts.pop().split(".")[0];
+          await cloudinary.uploader.destroy(`binomo_users/${publicId}`);
+        }
       }
 
       updatedData.image = req.file.path;
