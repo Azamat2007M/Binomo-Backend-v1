@@ -136,7 +136,7 @@ router.patch("/:id", upload.single("image"), async (req, res) => {
     let updatedData = {
       ...req.body,
     };
-
+    console.log("Updated Data:", updatedData);
     if (req.file) {
       if (existingUser.image && typeof existingUser.image === 'string') {
         const parts = existingUser.image.split("/");

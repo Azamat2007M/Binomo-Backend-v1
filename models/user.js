@@ -5,7 +5,7 @@ const User = sequelize.define('User', {
   name: {
     type: DataTypes.STRING,
     allowNull: false,
-    set(val) { this.setDataValue('name', val.trim()); } // trim аналог
+    set(val) { this.setDataValue('name', val.trim()); } 
   },
   email: {
     type: DataTypes.STRING,
@@ -14,7 +14,7 @@ const User = sequelize.define('User', {
     set(val) { this.setDataValue('email', val.trim()); }
   },
   phone: {
-    type: DataTypes.BIGINT, // вмещает длинные номера телефонов
+    type: DataTypes.BIGINT, 
   },
   password: {
     type: DataTypes.STRING,
@@ -34,9 +34,9 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   wallet: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.DECIMAL(15, 4), 
     allowNull: false,
-    defaultValue: 10000
+    defaultValue: 10000.0000,
   },
   useractived: {
     type: DataTypes.BOOLEAN,
